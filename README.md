@@ -26,7 +26,7 @@ If you represent low-level software things like heaps, databases, functions, UIs
 -   Trees become executable
 -   Automatic UIs for reordering actions in a function, adding databases to apps, and editing UI component properties
 -   Automatic, shareable, rewindable tree snapshots of runtime app state across data, functions and UI for live debugging, remote debugging, and bug reports
--   Referencing data across database engines using a consistent format: how the data is stored (in-mem, Postgres, Redis, Planetscale) becomes an implementation detail you can defer for later with little or no schema changes
+-   Referencing data across database engines using a consistent format: how the data is stored (in-mem, Postgres, Redis, Planetscale) becomes an implementation detail
 
 This turns the entire software ecosystem—every app and every user, every database and every row, every function and every API format—into one giant, interconnected, instantly visualizable tree.
 
