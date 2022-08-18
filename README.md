@@ -9,21 +9,24 @@ Tree then makes UIs that manipulate those models.
 ## Getting interesting
 
 By representing data as trees, we can do many things with all forms of data by building them once:
-- Automatic UIs for viewing, editing, reordering, and deleting data
-- Automatic forms for creating data
-- Automatic CRDT support for your data
-- Automatic representation of data across database engines
-- Automatic APIs and GraphQL endpoints your data
-- Adapters to reference data in API sources like Airtable or Google Sheets as if they were trees
-- Automatic data model undo & redo
-- Instant UIs for complex sorting and filtering with rules
+
+-   Automatic UIs for viewing, editing, reordering, and deleting data
+-   Automatic forms for creating data
+-   Automatic CRDT support for your data
+-   Automatic representation of data across database engines
+-   Automatic APIs and GraphQL endpoints for your data
+-   Adapters for referencing data from sources like Airtable or Google Sheets as if they were trees
+-   Automatic undo & redo
+-   Instant UIs for complex sorting and filtering with rules
 
 ## Getting weirder
 
 If you represent low-level software things like heaps, databases, functions, UIs, and entire apps as trees, you go into weirder territory:
-- Trees become executable
-- Automatic UIs for reordering actions in a function, adding databases to apps, and editing UI component properties
-- Automatic, shareable, rewindable tree snapshots of runtime app state across data, functions and UI for live debugging, remote debugging, and bug reports
+
+-   Trees become executable
+-   Automatic UIs for reordering actions in a function, adding databases to apps, and editing UI component properties
+-   Automatic, shareable, rewindable tree snapshots of runtime app state across data, functions and UI for live debugging, remote debugging, and bug reports
+-   Referencing data across database engines using a consistent format: how the data is stored (in-mem, Postgres, Redis, Planetscale) becomes an implementation detail you can defer for later with little or no schema changes
 
 This turns the entire software ecosystem—every app and every user, every database and every row, every function and every API format—into one giant, interconnected, instantly visualizable tree.
 
