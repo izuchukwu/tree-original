@@ -1,3 +1,5 @@
+import {TreeIconType} from './TreeIcon'
+
 /** A tree item's type */
 export type TreeType =
 	| 'text'
@@ -20,7 +22,7 @@ export type TreeItem = TreeBaseItem | TreeTypeItem | TreeRuleItem
 /** A basic tree item */
 export type TreeBaseItem = {
 	name?: string
-	type: TreeType
+	type: TreeType | string | [TreeType] | [string]
 	subtype?: TreeItem | Record<string, TreeItem>
 	children?: string[]
 	subtree?: Record<string, TreeItem>
@@ -40,21 +42,21 @@ export type TreeRuleItem = TreeBaseItem & {
 export type TreeTypeItem = TreeBaseItem & {
 	type: 'type'
 	data: {
-		name: string
-		nameFn: (string: TreeItem) => string
+		name?: string
+		nameFn?: (string: TreeItem) => string
 
-		icon: string | JSX.Element
-		iconFn: (item: TreeItem) => string | JSX.Element
+		icon?: TreeIconType
+		iconFn?: (item: TreeItem) => TreeIconType
 
-		label: string
-		labelFn: (item: TreeItem) => string
+		label?: string
+		labelFn?: (item: TreeItem) => string
 
 		// Function-only
-		childrenFn: (item: TreeItem) => string[]
-		treeFn: (item: TreeItem) => Record<string, TreeItem>
-		descriptionFn: (item: TreeItem) => string
+		childrenFn?: (item: TreeItem) => string[]
+		treeFn?: (item: TreeItem) => Record<string, TreeItem>
+		descriptionFn?: (item: TreeItem) => string
 
-		dataFormat: TreeItem
-		rules: Record<string, TreeRuleItem>
+		dataFormat?: TreeItem
+		rules?: Record<string, TreeRuleItem>
 	}
 }

@@ -3,12 +3,66 @@ import Head from 'next/head'
 import styles from '../styles/Home.module.css'
 import {Tree as AntTree} from 'antd'
 import type {DataNode} from 'antd/es/tree'
-import {TreeItem} from '../tree/tree-types'
+import {TreeItem, TreeType, TreeTypeItem} from '../tree/tree-types'
 import {useEffect, useState} from 'react'
 import _ from 'lodash'
-import {Tree as ArboristTree} from 'react-arborist'
+import 'antd/dist/antd.css'
+import {TreeIcon, TreeIconType} from '../tree/TreeIcon'
+import {Group, Space, Text} from '@mantine/core'
 
 const Home: NextPage = () => {
+	const [tree] = useState<TreeItem>({
+		name: 'App',
+		type: 'app',
+		children: ['pages', 'builtins'],
+		subtree: {
+			builtins: {
+				name: 'Built-Ins',
+				type: 'object',
+				subtype: {
+					types: {
+						type: 'list',
+						subtype: {type: 'type'}
+					}
+				},
+				children: ['types'],
+				subtree: {
+					types: {
+						name: 'Types',
+						type: 'list',
+						subtype: {type: 'type'},
+						children: Object.keys(BuiltInTypes),
+						subtree: BuiltInTypes
+					}
+				}
+			},
+			pages: {
+				name: 'Pages',
+				type: 'list',
+				subtype: {type: 'page'},
+				children: ['lp', 'signin', 'home'],
+				subtree: {
+					lp: {
+						name: 'Landing Page',
+						type: 'page',
+						children: ['nav', 'hero', 'body', 'footer'],
+						subtree: {
+							nav: {name: 'Nav', type: 'block'},
+							hero: {name: 'Hero', type: 'block'},
+							body: {name: 'Body', type: 'block'},
+							footer: {
+								name: 'Footer',
+								type: 'block'
+							}
+						}
+					},
+					signin: {name: 'Sign In', type: 'page'},
+					home: {name: 'Home', type: 'page'}
+				}
+			}
+		}
+	})
+
 	return (
 		<div className={styles.container}>
 			<Head>
@@ -21,35 +75,17 @@ const Home: NextPage = () => {
 			</Head>
 
 			<main className={styles.main}>
-				<Tree
-					root={{
-						name: 'Pages',
-						type: '[page]',
-						children: ['lp', 'signin', 'home'],
-						subtree: {
-							lp: {
-								name: 'Landing Page',
-								type: 'page',
-								children: ['nav', 'hero', 'body', 'footer'],
-								subtree: {
-									nav: {name: 'Nav', type: 'page'},
-									hero: {name: 'Hero', type: 'page'},
-									body: {name: 'Body', type: 'page'},
-									footer: {name: 'Footer', type: 'page'}
-								}
-							},
-							signin: {name: 'Sign In', type: 'page'},
-							home: {name: 'Home', type: 'page'}
-						}
-					}}
-					path={''}
-				/>
+				<Text>
+					<b>Tree</b>
+				</Text>
+				<Space h={10} />
+				<Tree root={tree} path={'/'} />
 			</main>
 		</div>
 	)
 }
 
-/* -- Tree -- */
+/* -- Tree React -- */
 
 interface TreeProps {
 	root: TreeItem
@@ -58,121 +94,249 @@ interface TreeProps {
 
 const Tree = ({root, path}: TreeProps) => {
 	const [antTreeData, setAntTreeData] = useState<DataNode[]>()
-	const [arboristData, setArboristData] = useState({id: 'NA'})
 
 	/** Ant Tree Data for Tree Item Effect */
 	useEffect(() => {
 		setAntTreeData(antTreeDataForTree(root, path))
 	}, [root, path])
 
-	/** Arborist Data for Tree Item Effect */
-	useEffect(() => {
-		setArboristData(arboristDataForTree(root, path) as any)
-	}, [root, path])
-
 	return (
-		<>
-			<AntTree treeData={antTreeData} />
-			<ArboristTree data={arboristData}>{Node}</ArboristTree>
-		</>
+		<AntTree
+			treeData={antTreeData}
+			showIcon
+			titleRender={(node) => {
+				const {item} = {...resolvePath(root, node.key as string)}
+				const {item: type} = {
+					...resolveType(root, item?.type as string)
+				}
+				return (
+					<span>
+						<span>{item?.name}</span>
+						<span style={{opacity: 0.5, marginLeft: 10}}>
+							{type?.name}
+						</span>
+					</span>
+				)
+			}}
+			// you need to pass the absolute path as text so you can resolve it here
+		/>
 	)
 }
 
-const Node = ({ref, styles, data}: any) => {
-	return (
-		<div ref={ref} style={styles.row}>
-			<div style={styles.indent}>{data.name}</div>
-		</div>
-	)
-}
-
-/** TreeItem -> Data for Arborist */
-const arboristDataForTree = (root: TreeItem, path: string) => {
-	return arboristNodeForTreeItem(root, path, root).children
-}
-
-const arboristNodeForTreeItem = (
-	root: TreeItem,
-	path: string,
-	context: TreeItem,
-	contextParent?: TreeItem
-): any => {
-	// 1. Get tree item at path
-	const item = resolvePath(root, path, context, contextParent)
-
-	// 2. Convert it to Node data
-	const node = {name: item?.name, id: path, children: [] as any[]}
-
-	// 3. Convert its children to DataNode[]
-	item?.children?.forEach((childPath) => {
-		const childNode = arboristNodeForTreeItem(
-			root,
-			childPath,
-			item,
-			context
-		)
-		node.children?.push(childNode)
-	})
-
-	return node
-}
+/* -- Ant Tree Fns -- */
 
 /** TreeItem -> DataNode[] for Ant Tree */
-const antTreeDataForTree = (root: TreeItem, path: string) => {
-	return antDataNodeForTreeItem(root, path, root).children
+const antTreeDataForTree = (root: TreeItem, absolutePath: string) => {
+	console.log('antTreeDataForTree:')
+	console.log(antDataNodeForTreeItem(root, absolutePath))
+	return antDataNodeForTreeItem(root, absolutePath)?.children
 }
 
+/** Recursive function for TreeItem -> DataNode[] conversion */
 const antDataNodeForTreeItem = (
 	root: TreeItem,
 	path: string,
-	context: TreeItem,
-	contextParent?: TreeItem
-): DataNode => {
-	// 1. Get tree item at path
-	const item = resolvePath(root, path, context, contextParent)
+	relativeTo?: TreePosition
+): DataNode | null => {
+	// 1. Resolve the tree item
+	const treePosition = resolvePath(root, path, relativeTo)
+	if (!treePosition) return null
+	const {item, absolutePath} = treePosition
 
-	// 2. Convert it to a DataNode
-	const dataNode: DataNode = {title: item?.name, key: path, children: []}
+	// 2. Convert it to DataNode
+	const itemType = _.isArray(item.type) ? item.type[0] : item.type
+	const itemIcon = BuiltInTypes[itemType].data.icon ?? 'QuestionMarkCircled'
+	const dataNode: DataNode = {
+		title: item?.name,
+		key: absolutePath,
+		children: [],
+		icon: <TreeIcon icon={itemIcon} />
+	}
 
-	// 3. Convert its children to DataNode[]
+	// 3. Convert its children to DataNode[] and add them to its DataNode
 	item?.children?.forEach((childPath) => {
-		const childNode = antDataNodeForTreeItem(root, childPath, item, context)
-		dataNode.children?.push(childNode)
+		const childNode = antDataNodeForTreeItem(root, childPath, treePosition)
+		if (childNode) dataNode.children?.push(childNode)
 	})
 
 	return dataNode
 }
 
+/* -- Built-In Types -- */
+
+/** Creates a type item using the given icon & data */
+const typeWithIcon = (name: string, icon: TreeIconType): TreeTypeItem => ({
+	name,
+	type: 'type',
+	data: {icon}
+})
+
+/* Tree & BL Types */
+
+const TreeTypes: {[TreeType: string]: TreeTypeItem} = {
+	text: typeWithIcon('Text', 'Text'),
+	rich: typeWithIcon('Rich Text', 'TextAlignLeft'),
+	date: typeWithIcon('Date', 'Calendar'),
+	number: typeWithIcon('Number', 'Number'),
+	list: typeWithIcon('List', 'ListBullet'),
+	object: typeWithIcon('Object', 'Table'),
+	bool: typeWithIcon('Yes or No', 'Switch'),
+	select: typeWithIcon('Select', 'DropdownMenu'),
+	multi: typeWithIcon('Multi-Select', 'DropdownMenu'),
+	ref: typeWithIcon('Reference', 'ExternalLink'),
+	hash: typeWithIcon('Password', 'LockClosed'),
+	action: typeWithIcon('Action', 'Play'),
+	type: typeWithIcon('Type', 'Cube'),
+	converter: typeWithIcon('Type Converter', 'DoubleArrowRight')
+}
+
+const BLTypes: {[string: string]: TreeTypeItem} = {
+	app: typeWithIcon('App', 'Laptop'),
+	page: typeWithIcon('Page', 'File'),
+	block: typeWithIcon('Block', 'Frame'),
+	db: typeWithIcon('DB', 'Table'),
+	domain: typeWithIcon('Domain', 'Globe'),
+	publishedver: typeWithIcon('Published Version', 'ArrowUp'),
+	animation: typeWithIcon('Animation', 'MagicWand')
+}
+
+/* Built-In Types */
+
+const BuiltInTypes: {[string: string]: TreeTypeItem} = {
+	...TreeTypes,
+	...BLTypes
+}
+
+/* -- Resolve -- */
+
+/* Resolve Type */
+
+/**
+ * Resolves a type to a type tree item
+ *
+ * The arguments are the same as `resolvePath`
+ * If a single word is specified, the built-in types will be searched first
+ *
+ * Built-In Paths: 'number'
+ * Relative Paths:
+ * 		Type Path from Subtree: 'car'
+ * 		Type Path from Sibling: './vehicleTypes/car'
+ * Absolute Path (Path from Root): '/vehicleTypes/car'
+ */
+const resolveType = (
+	root: TreeItem,
+	path: string,
+	relativeTo?: TreePosition
+): TreePosition | undefined => {
+	// 1. Resolve built-in types
+	if (!path.includes('/')) {
+		const builtInTypeTreePos = resolvePath(root, `/builtins/types/${path}`)
+		if (builtInTypeTreePos) return builtInTypeTreePos
+	}
+
+	// 2. Resolve type paths
+	return resolvePath(root, path, relativeTo)
+}
+
+/* Resolve Path */
+
+/** An item in the Tree, its parent item, and its absolute path */
+interface TreePosition {
+	item: TreeItem
+	absolutePath: string
+	parent?: TreeItem
+}
+
+/**
+ * Resolves a relative or absolute path to a tree item
+ *
+ * `relativeTo` must be set to resolve subtree paths.
+ * `relativeTo` and `relativeTo.parent` must be set to resolve sibling paths.
+ * Absolute paths do not require `relativeTo`.
+ *
+ * Relative Paths:
+ * 		Self: ''
+ * 		Path from Subtree: 'xyz'
+ * 		Path from Sibling: './xyz'
+ * Absolute Path (Path from Root): '/xyz'
+ */
 const resolvePath = (
 	root: TreeItem,
 	path: string,
-	context?: TreeItem,
-	contextParent?: TreeItem
-): TreeItem | null => {
-	// Self
-	if (path === '') return context ?? null
+	relativeTo?: TreePosition
+): TreePosition | undefined => {
+	// 1. Resolve absolute paths
+	// Root
+	if (path === '/') return {item: root, absolutePath: '/'}
 
-	// Path
+	// 2. Resolve relative paths
+	// Self
+	if (path === '') return relativeTo ?? undefined
+
+	// Relative to...
 	const pathArray = path.split('/')
 	if (pathArray[0] === '.') {
 		// Sibling
-		return contextParent
-			? resolvePath(root, pathArray.slice(1).join('/'), contextParent)
-			: null
+		// To resolve siblings, relativeTo.parent must be set
+		if (!relativeTo?.parent) return undefined
+
+		// a. Create tree position for parent
+		const parent = relativeTo?.parent
+		const parentPath = relativeTo?.absolutePath
+			.split('/')
+			.slice(0, -1)
+			.join('/')
+		const relativeToParent: TreePosition = {
+			item: parent,
+			absolutePath: parentPath
+		}
+
+		// b. Resolve the sibling's child from the parent's subtree
+		const pathFromParent = pathArray.slice(1).join('/') // Remove the ./
+		return resolvePath(root, pathFromParent, relativeToParent)
 	} else if (pathArray[0] === '') {
 		// Root
-		return resolvePath(root, pathArray.slice(1).join('/'), root)
+		debugger
+
+		// a. Create tree position for root
+		const relativeToRoot: TreePosition = {
+			item: root,
+			absolutePath: '/'
+		}
+
+		// Resolve the root item from the root's subtree
+		const pathFromRoot = pathArray.slice(1).join('/') // Remove the /
+		return resolvePath(root, pathFromRoot, relativeToRoot)
 	} else {
 		// Subtree
-		if (!context) return null
-		const child = context.subtree?.[pathArray[0]]
+		// To resolve subtree children, relativeTo must be set
+		if (!relativeTo) return undefined
+
+		// a. Get the child from the subtree
+		const childID = pathArray[0]
+		const child = relativeTo.item.subtree?.[childID]
+		if (!child) return undefined
+
+		// b. Create tree position for child
+		const relativeToChild: TreePosition = {
+			item: child,
+			absolutePath: pathToChild(relativeTo.absolutePath, childID)
+		}
+
+		// c. Resolve the child's child from the child's subtree
+		const pathFromChild = pathArray.slice(1).join('/')
 		return child
-			? resolvePath(root, pathArray.slice(1).join('/'), child, context)
-			: null
+			? resolvePath(root, pathFromChild, relativeToChild)
+			: undefined
 	}
 }
 
-//
+/** Creates a path to a child of a given path */
+const pathToChild = (path: string, childID: string) => {
+	return `${path}${path.endsWith('/') ? '' : '/'}${childID}`
+}
+
+// ARCHIVE
 
 /** Converts a `TreeItem` into `DataNode[]` for Ant Tree */
 // const antTreeDataForTreeItem = (tree: TreeItem, rootID: string): DataNode[] => {
